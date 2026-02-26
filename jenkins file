@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "punitha-firstapp"
-        AWS_REGION = "ap-south-1"
-        EKS_CLUSTER = "puni"   // ← your cluster name
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        DOCKER_IMAGE = "msaipunitha/myapp"
     }
 
     stages {
@@ -18,30 +17,35 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:latest .'
+                sh """
+                docker build -t ${DOCKER_IMAGE}:latest .
+                """
             }
         }
 
-        stage('Docker Login') {
+        stage('Login to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
-                }
+                sh """
+                echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                """
             }
         }
 
         stage('Push Image to DockerHub') {
             steps {
-                sh 'docker tag $IMAGE_NAME:latest $USER/$IMAGE_NAME:latest'
-                sh 'docker push $USER/$IMAGE_NAME:latest'
+                sh """
+                docker push ${DOCKER_IMAGE}:latest
+                """
             }
         }
 
         stage('Deploy to EKS') {
             steps {
-                sh 'aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER'
-                sh 'kubectl apply -f deployment.yaml'
-                sh 'kubectl apply -f service.yaml'
+                sh """
+                kubectl apply -f deployment.yaml
+                kubectl apply -f service.yaml
+                kubectl get pods
+                """
             }
         }
     }
