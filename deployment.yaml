@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: puni-deployment
+  labels:
+    app: puni-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: puni-app
+  template:
+    metadata:
+      labels:
+        app: puni-app
+    spec:
+      containers:
+        - name: puni-container
+          image: 599128423191.dkr.ecr.ap-south-1.amazonaws.com/puni-app:latest
+          ports:
+            - containerPort: 3000
